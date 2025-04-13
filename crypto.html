@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto Dashboard | Francinilton Junior</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tsparticles@3/tsparticles.bundle.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --neon-cyan: #0ff0fc;
+      --neon-pink: #ff2ced;
+      --matrix-green: #00ff41;
+      --dark-bg: #0a0a12;
+    }
+    
+    body {
+      margin: 0;
+      font-family: 'Rajdhani', sans-serif;
+      background-color: var(--dark-bg);
+      overflow-x: hidden;
+      color: white;
+      min-height: 100vh;
+    }
+    
+    .code-font {
+      font-family: 'Space Mono', monospace;
+    }
+    
+    #tsparticles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -2;
+      opacity: 0.7;
+    }
+    
+    .neon-text {
+      text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+    }
+    
+    .neon-pink {
+      color: var(--neon-pink);
+      text-shadow: 0 0 5px var(--neon-pink), 0 0 10px var(--neon-pink);
+    }
+    
+    .neon-cyan {
+      color: var(--neon-cyan);
+      text-shadow: 0 0 5px var(--neon-cyan), 0 0 10px var(--neon-cyan);
+    }
+    
+    .glow-box {
+      border: 1px solid rgba(0, 255, 255, 0.3);
+      border-radius: 8px;
+      background: rgba(10, 20, 30, 0.4);
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.1);
+    }
+    
+    .glow-box:hover {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+      transform: translateY(-3px);
+    }
+    
+    .terminal {
+      background: rgba(10, 10, 20, 0.8);
+      border: 1px solid var(--neon-cyan);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+      overflow: hidden;
+    }
+    
+    .terminal-header {
+      background: linear-gradient(90deg, #0a0a20, #151530);
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--neon-cyan);
+      display: flex;
+      align-items: center;
+    }
+    
+    .terminal-btn {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+    
+    .terminal-btn.red { background: #ff5f56; }
+    .terminal-btn.yellow { background: #ffbd2e; }
+    .terminal-btn.green { background: #27c93f; }
+    
+    .terminal-title {
+      margin-left: 10px;
+      color: var(--neon-cyan);
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+    
+    .crypto-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .crypto-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 255, 255, 0.2);
+    }
+    
+    .positive {
+      color: #00ff41;
+    }
+    
+    .negative {
+      color: #ff2d54;
+    }
+    
+    .blink {
+      animation: blink 1s step-end infinite;
+    }
+    
+    @keyframes blink {
+      from, to { opacity: 1 }
+      50% { opacity: 0.5 }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.8; }
+      50% { opacity: 0.3; }
+      100% { opacity: 0.8; }
+    }
+  </style>
+</head>
+<body>
+  <div id="tsparticles"></div>
+
+  <header class="relative z-10 pt-12 pb-8 px-6">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <div>
+        <h1 class="text-3xl md:text-4xl font-bold neon-text code-font">CRYPTO_DASH</h1>
+        <p class="text-gray-400 code-font">Monitoramento de criptomoedas em tempo real</p>
+      </div>
+      <div class="flex items-center space-x-4">
+        <div class="text-right">
+          <div class="text-xs text-gray-400 code-font">Última atualização:</div>
+          <div id="update-time" class="text-sm neon-cyan code-font blink">--:--:--</div>
+        </div>
+        <button id="refresh-btn" class="bg-cyan-500 hover:bg-cyan-600 text-black px-4 py-2 rounded-md code-font font-bold transition-all">
+          <i class="fas fa-sync-alt mr-2"></i> Atualizar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="relative z-10 max-w-6xl mx-auto px-6 pb-12">
+    <div class="overflow-x-auto mb-8 glow-box">
+      <div class="flex space-x-8 py-3 px-4 code-font text-sm min-w-max">
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-2">BTC:</span>
+          <span id="btc-price" class="font-bold">$--.--</span>
+          <span id="btc-change" class="ml-2">(--.--%)</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-2">ETH:</span>
+          <span id="eth-price" class="font-bold">$--.--</span>
+          <span id="eth-change" class="ml-2">(--.--%)</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-2">BNB:</span>
+          <span id="bnb-price" class="font-bold">$--.--</span>
+          <span id="bnb-change" class="ml-2">(--.--%)</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-2">SOL:</span>
+          <span id="sol-price" class="font-bold">$--.--</span>
+          <span id="sol-change" class="ml-2">(--.--%)</span>
+        </div>
+        <div class="flex items-center">
+          <span class="text-gray-400 mr-2">XRP:</span>
+          <span id="xrp-price" class="font-bold">$--.--</span>
+          <span id="xrp-change" class="ml-2">(--.--%)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8 mb-8">
+      <div class="lg:col-span-2 terminal">
+        <div class="terminal-header">
+          <div class="terminal-btn red"></div>
+          <div class="terminal-btn yellow"></div>
+          <div class="terminal-btn green"></div>
+          <div class="terminal-title code-font">price_chart.js</div>
+        </div>
+        <div class="p-4">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-bold neon-cyan" id="chart-title">Bitcoin (BTC)</h3>
+            <div class="flex space-x-2 code-font text-sm">
+              <button class="time-btn active px-3 py-1 bg-cyan-900 rounded" data-interval="1">24H</button>
+              <button class="time-btn px-3 py-1 hover:bg-cyan-900 rounded" data-interval="7">7D</button>
+              <button class="time-btn px-3 py-1 hover:bg-cyan-900 rounded" data-interval="30">30D</button>
+              <button class="time-btn px-3 py-1 hover:bg-cyan-900 rounded" data-interval="90">90D</button>
+            </div>
+          </div>
+          <div class="h-80">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-btn red"></div>
+          <div class="terminal-btn yellow"></div>
+          <div class="terminal-btn green"></div>
+          <div class="terminal-title code-font">top_cryptos.db</div>
+        </div>
+        <div class="p-4">
+          <h3 class="text-xl font-bold neon-pink mb-4">Top 5 Criptomoedas</h3>
+          <div class="space-y-4" id="top-cryptos">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="terminal glow-box p-6 text-center">
+        <div class="text-3xl font-bold neon-cyan mb-2" id="market-cap">$--.--T</div>
+        <div class="text-gray-400 code-font">Market Cap</div>
+      </div>
+      <div class="terminal glow-box p-6 text-center">
+        <div class="text-3xl font-bold neon-cyan mb-2" id="volume">$--.--B</div>
+        <div class="text-gray-400 code-font">Volume 24h</div>
+      </div>
+      <div class="terminal glow-box p-6 text-center">
+        <div class="text-3xl font-bold neon-cyan mb-2" id="btc-dominance">--.--%</div>
+        <div class="text-gray-400 code-font">BTC Dominance</div>
+      </div>
+      <div class="terminal glow-box p-6 text-center">
+        <div class="text-3xl font-bold neon-cyan mb-2" id="active-cryptos">--,--</div>
+        <div class="text-gray-400 code-font">Cryptos Ativas</div>
+      </div>
+    </div>
+
+    <div class="terminal">
+      <div class="terminal-header">
+        <div class="terminal-btn red"></div>
+        <div class="terminal-btn yellow"></div>
+        <div class="terminal-btn green"></div>
+        <div class="terminal-title code-font">all_cryptos.table</div>
+      </div>
+      <div class="p-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold neon-cyan">Todas as Criptomoedas</h3>
+          <div class="relative">
+            <input type="text" id="search-crypto" placeholder="Buscar..." class="bg-gray-900 border border-cyan-500 rounded-md px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 code-font">
+            <i class="fas fa-search absolute right-3 top-3 text-gray-400"></i>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full code-font">
+            <thead>
+              <tr class="border-b border-gray-700 text-gray-400 text-left">
+                <th class="pb-2">#</th>
+                <th class="pb-2">Nome</th>
+                <th class="pb-2 text-right">Preço</th>
+                <th class="pb-2 text-right">24h %</th>
+                <th class="pb-2 text-right">Market Cap</th>
+                <th class="pb-2 text-right">Volume(24h)</th>
+              </tr>
+            </thead>
+            <tbody id="crypto-table">
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center text-sm text-gray-500 py-6 code-font pulse">
+    <p>/* Crypto Dashboard - Desenvolvido por Francinilton Junior */</p>
+    <p class="mt-1">Dados fornecidos pela CoinGecko API</p>
+  </footer>
+
+  <script>
+    tsParticles.load("tsparticles", {
+      background: { color: { value: "transparent" } },
+      fpsLimit: 120,
+      interactivity: {
+        events: {
+          onHover: {
+            enable: true,
+            mode: "repulse"
+          }
+        }
+      },
+      particles: {
+        color: { 
+          value: ["#00ffcc", "#ff2ced", "#00ff41"] 
+        },
+        links: { 
+          enable: true, 
+          color: "#00ffcc", 
+          opacity: 0.3,
+          distance: 150
+        },
+        move: { 
+          enable: true, 
+          speed: 1,
+          outModes: "bounce"
+        },
+        number: { 
+          value: 60,
+          density: {
+            enable: true
+          }
+        },
+        opacity: { 
+          value: { min: 0.3, max: 0.7 } 
+        },
+        shape: { 
+          type: "circle" 
+        },
+        size: { 
+          value: { min: 1, max: 5 } 
+        }
+      }
+    });
+
+    let priceChart;
+    let currentChartCoin = 'bitcoin';
+    let currentInterval = '1';
+
+    const cryptoData = {
+      bitcoin: {
+        name: 'Bitcoin',
+        symbol: 'BTC',
+        price: 51432.78,
+        change24h: 2.34,
+        marketCap: 1002450000000,
+        volume: 28456000000,
+        sparkline: Array.from({length: 24}, (_, i) => 50000 + Math.sin(i/2)*2000 + Math.random()*1000)
+      },
+      ethereum: {
+        name: 'Ethereum',
+        symbol: 'ETH',
+        price: 2783.45,
+        change24h: -1.23,
+        marketCap: 334560000000,
+        volume: 12567000000,
+        sparkline: Array.from({length: 24}, (_, i) => 2700 + Math.sin(i/2)*100 + Math.random()*200)
+      },
+      binancecoin: {
+        name: 'BNB',
+        symbol: 'BNB',
+        price: 352.67,
+        change24h: 0.78,
+        marketCap: 53450000000,
+        volume: 1245000000,
+        sparkline: Array.from({length: 24}, (_, i) => 350 + Math.sin(i/2)*10 + Math.random()*20)
+      },
+      solana: {
+        name: 'Solana',
+        symbol: 'SOL',
+        price: 102.45,
+        change24h: 5.67,
+        marketCap: 43450000000,
+        volume: 2456000000,
+        sparkline: Array.from({length: 24}, (_, i) => 95 + Math.sin(i/2)*15 + Math.random()*30)
+      },
+      ripple: {
+        name: 'XRP',
+        symbol: 'XRP',
+        price: 0.5423,
+        change24h: -0.45,
+        marketCap: 29450000000,
+        volume: 1245000000,
+        sparkline: Array.from({length: 24}, (_, i) => 0.53 + Math.sin(i/2)*0.02 + Math.random()*0.01)
+      },
+      cardano: {
+        name: 'Cardano',
+        symbol: 'ADA',
+        price: 0.4523,
+        change24h: 1.25,
+        marketCap: 15450000000,
+        volume: 545000000,
+        sparkline: Array.from({length: 24}, (_, i) => 0.44 + Math.sin(i/2)*0.01 + Math.random()*0.005)
+      },
+      dogecoin: {
+        name: 'Dogecoin',
+        symbol: 'DOGE',
+        price: 0.0845,
+        change24h: -2.34,
+        marketCap: 11450000000,
+        volume: 345000000,
+        sparkline: Array.from({length: 24}, (_, i) => 0.085 + Math.sin(i/2)*0.002 + Math.random()*0.001)
+      },
+      polkadot: {
+        name: 'Polkadot',
+        symbol: 'DOT',
+        price: 6.78,
+        change24h: 3.45,
+        marketCap: 8450000000,
+        volume: 245000000,
+        sparkline: Array.from({length: 24}, (_, i) => 6.5 + Math.sin(i/2)*0.3 + Math.random()*0.2)
+      }
+    };
+
+    const topCryptos = ['bitcoin', 'ethereum', 'binancecoin', 'solana', 'ripple'];
+
+    function initDashboard() {
+      updateMarketData();
+      updateTopCryptos();
+      updateCryptoTable();
+      initPriceChart();
+      updateTime();
+      
+      document.getElementById('refresh-btn').addEventListener('click', refreshData);
+      
+      const timeButtons = document.querySelectorAll('.time-btn');
+      timeButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+          timeButtons.forEach(b => b.classList.remove('active', 'bg-cyan-900'));
+          this.classList.add('active', 'bg-cyan-900');
+          currentInterval = this.dataset.interval;
+          updateChart();
+        });
+      });
+      
+      document.getElementById('search-crypto').addEventListener('input', function() {
+        filterCryptoTable(this.value.toLowerCase());
+      });
+    }
+
+    function updateMarketData() {
+      const totalMarketCap = Object.values(cryptoData).reduce((sum, crypto) => sum + crypto.marketCap, 0);
+      document.getElementById('market-cap').textContent = `$${(totalMarketCap / 1000000000000).toFixed(2)}T`;
+
+      const totalVolume = Object.values(cryptoData).reduce((sum, crypto) => sum + crypto.volume, 0);
+      document.getElementById('volume').textContent = `$${(totalVolume / 1000000000).toFixed(2)}B`;
+
+      const btcDominance = (cryptoData.bitcoin.marketCap / totalMarketCap * 100).toFixed(2);
+      document.getElementById('btc-dominance').textContent = `${btcDominance}%`;
+
+      document.getElementById('active-cryptos').textContent = '13,456';
+
+      document.getElementById('btc-price').textContent = `$${cryptoData.bitcoin.price.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+      document.getElementById('btc-change').textContent = `(${cryptoData.bitcoin.change24h > 0 ? '+' : ''}${cryptoData.bitcoin.change24h}%)`;
+      document.getElementById('btc-change').className = cryptoData.bitcoin.change24h > 0 ? 'ml-2 positive' : 'ml-2 negative';
+      
+      document.getElementById('eth-price').textContent = `$${cryptoData.ethereum.price.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+      document.getElementById('eth-change').textContent = `(${cryptoData.ethereum.change24h > 0 ? '+' : ''}${cryptoData.ethereum.change24h}%)`;
+      document.getElementById('eth-change').className = cryptoData.ethereum.change24h > 0 ? 'ml-2 positive' : 'ml-2 negative';
+      
+      document.getElementById('bnb-price').textContent = `$${cryptoData.binancecoin.price.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+      document.getElementById('bnb-change').textContent = `(${cryptoData.binancecoin.change24h > 0 ? '+' : ''}${cryptoData.binancecoin.change24h}%)`;
+      document.getElementById('bnb-change').className = cryptoData.binancecoin.change24h > 0 ? 'ml-2 positive' : 'ml-2 negative';
+      
+      document.getElementById('sol-price').textContent = `$${cryptoData.solana.price.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+      document.getElementById('sol-change').textContent = `(${cryptoData.solana.change24h > 0 ? '+' : ''}${cryptoData.solana.change24h}%)`;
+      document.getElementById('sol-change').className = cryptoData.solana.change24h > 0 ? 'ml-2 positive' : 'ml-2 negative';
+      
+      document.getElementById('xrp-price').textContent = `$${cryptoData.ripple.price.toLocaleString('en-US', {maximumFractionDigits: 4})}`;
+      document.getElementById('xrp-change').textContent = `(${cryptoData.ripple.change24h > 0 ? '+' : ''}${cryptoData.ripple.change24h}%)`;
+      document.getElementById('xrp-change').className = cryptoData.ripple.change24h > 0 ? 'ml-2 positive' : 'ml-2 negative';
+    }
+
+    function updateTopCryptos() {
+      const container = document.getElementById('top-cryptos');
+      container.innerHTML = '';
+      
+      topCryptos.forEach(cryptoId => {
+        const crypto = cryptoData[cryptoId];
+        const changeClass = crypto.change24h > 0 ? 'positive' : 'negative';
+        const changeIcon = crypto.change24h > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        const card = document.createElement('div');
+        card.className = 'crypto-card glow-box p-4 flex items-center justify-between';
+        card.innerHTML = `
+          <div class="flex items-center">
+            <div class="bg-gray-800 rounded-full w-10 h-10 flex items-center justify-center mr-3">
+              <i class="fab fa-${crypto.symbol.toLowerCase()} text-xl"></i>
+            </div>
+            <div>
+              <div class="font-bold">${crypto.name}</div>
+              <div class="text-gray-400 text-sm">${crypto.symbol}</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="font-bold">$${crypto.price.toLocaleString('en-US', {maximumFractionDigits: crypto.price < 1 ? 4 : 2})}</div>
+            <div class="text-sm ${changeClass}">
+              <i class="fas ${changeIcon} mr-1"></i>
+              ${crypto.change24h > 0 ? '+' : ''}${crypto.change24h}%
+            </div>
+          </div>
+        `;
+        
+        card.addEventListener('click', () => {
+          currentChartCoin = cryptoId;
+          document.getElementById('chart-title').textContent = `${crypto.name} (${crypto.symbol})`;
+          updateChart();
+        });
+        
+        container.appendChild(card);
+      });
+    }
+
+    function updateCryptoTable() {
+      const table = document.getElementById('crypto-table');
+      table.innerHTML = '';
+      
+      Object.entries(cryptoData).forEach(([id, crypto], index) => {
+        const changeClass = crypto.change24h > 0 ? 'positive' : 'negative';
+        const changeIcon = crypto.change24h > 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        const row = document.createElement('tr');
+        row.className = 'border-b border-gray-800 hover:bg-gray-900/50';
+        row.innerHTML = `
+          <td class="py-3 text-gray-400">${index + 1}</td>
+          <td class="py-3">
+            <div class="flex items-center">
+              <div class="bg-gray-800 rounded-full w-8 h-8 flex items-center justify-center mr-2">
+                <i class="fab fa-${crypto.symbol.toLowerCase()} text-sm"></i>
+              </div>
+              <div>
+                <div class="font-bold">${crypto.name}</div>
+                <div class="text-gray-400 text-xs">${crypto.symbol}</div>
+              </div>
+            </div>
+          </td>
+          <td class="py-3 text-right">$${crypto.price.toLocaleString('en-US', {maximumFractionDigits: crypto.price < 1 ? 4 : 2})}</td>
+          <td class="py-3 text-right ${changeClass}">
+            <i class="fas ${changeIcon} mr-1"></i>
+            ${crypto.change24h > 0 ? '+' : ''}${crypto.change24h}%
+          </td>
+          <td class="py-3 text-right">$${(crypto.marketCap / 1000000000).toFixed(2)}B</td>
+          <td class="py-3 text-right">$${(crypto.volume / 1000000).toFixed(2)}M</td>
+        `;
+        
+        row.addEventListener('click', () => {
+          currentChartCoin = id;
+          document.getElementById('chart-title').textContent = `${crypto.name} (${crypto.symbol})`;
+          updateChart();
+        });
+        
+        table.appendChild(row);
+      });
+    }
+
+    function filterCryptoTable(searchTerm) {
+      const rows = document.getElementById('crypto-table').querySelectorAll('tr');
+      
+      rows.forEach(row => {
+        const name = row.querySelector('td:nth-child(2) div div:first-child').textContent.toLowerCase();
+        const symbol = row.querySelector('td:nth-child(2) div div:last-child').textContent.toLowerCase();
+        
+        if (name.includes(searchTerm) || symbol.includes(searchTerm)) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    function initPriceChart() {
+      const ctx = document.getElementById('priceChart').getContext('2d');
+      
+      priceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+          datasets: [{
+            label: 'Price',
+            data: cryptoData[currentChartCoin].sparkline,
+            borderColor: '#00ffcc',
+            backgroundColor: 'rgba(0, 255, 204, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: function(context) {
+                  return `$${context.parsed.y.toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: 'rgba(255, 255, 255, 0.7)'
+              }
+            },
+            y: {
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              },
+              ticks: {
+                color: 'rgba(255, 255, 255, 0.7)',
+                callback: function(value) {
+                  return '$' + value.toLocaleString('en-US');
+                }
+              }
+            }
+          },
+          interaction: {
+            mode: 'nearest',
+            axis: 'x',
+            intersect: false
+          }
+        }
+      });
+    }
+
+    function updateChart() {
+      const crypto = cryptoData[currentChartCoin];
+      const newData = crypto.sparkline.map(value => {
+        const variation = currentInterval === '1' ? Math.random() * 100 : 
+                         currentInterval === '7' ? Math.random() * 500 : 
+                         currentInterval === '30' ? Math.random() * 1000 : 
+                         Math.random() * 2000;
+        
+        return value + (Math.random() > 0.5 ? variation : -variation);
+      });
+      
+      priceChart.data.datasets[0].data = newData;
+
+      if (currentInterval === '1') {
+        priceChart.data.labels = Array.from({length: 24}, (_, i) => `${i}:00`);
+      } else if (currentInterval === '7') {
+        priceChart.data.labels = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+      } else if (currentInterval === '30') {
+        priceChart.data.labels = Array.from({length: 30}, (_, i) => `Dia ${i+1}`);
+      } else {
+        priceChart.data.labels = Array.from({length: 12}, (_, i) => `Sem ${i+1}`);
+      }
+      
+      priceChart.update();
+    }
+
+    function updateTime() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('pt-BR', {hour12: false});
+      document.getElementById('update-time').textContent = timeStr;
+    }
+
+    function refreshData() {
+      Object.values(cryptoData).forEach(crypto => {
+        crypto.price *= (1 + (Math.random() * 0.02 - 0.01));
+        crypto.change24h += (Math.random() * 0.5 - 0.25);
+        crypto.volume *= (1 + (Math.random() * 0.1 - 0.05));
+      });
+      
+      updateMarketData();
+      updateTopCryptos();
+      updateCryptoTable();
+      updateChart();
+      updateTime();
+      
+      const btn = document.getElementById('refresh-btn');
+      btn.innerHTML = '<i class="fas fa-check mr-2"></i> Atualizado';
+      btn.classList.remove('bg-cyan-500', 'hover:bg-cyan-600');
+      btn.classList.add('bg-green-500', 'hover:bg-green-600');
+      
+      setTimeout(() => {
+        btn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i> Atualizar';
+        btn.classList.remove('bg-green-500', 'hover:bg-green-600');
+        btn.classList.add('bg-cyan-500', 'hover:bg-cyan-600');
+      }, 2000);
+    }
+
+    window.addEventListener('DOMContentLoaded', initDashboard);
+  </script>
+</body>
+</html>
